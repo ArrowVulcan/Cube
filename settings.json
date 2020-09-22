@@ -1,0 +1,31 @@
+{
+    
+    "keepCubePosition": false,
+
+    "hotkey": "Ctrl+Shift+F11",
+
+    "front": {
+        "path": "https://www.google.se/"
+    },
+
+    "back": {
+        
+    },
+
+    "left": {
+        
+    },
+
+    "right": {
+
+    },
+
+    "top": {
+
+    },
+
+    "bottom": {
+
+    }
+
+}

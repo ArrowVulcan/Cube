@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+	<meta charset="UTF-8">
+	<title>Cube</title>
+
+	<style>
+		
+		*{
+            box-sizing: border-box;
+            margin: 0px;
+            padding: 0px;
+            border: 0px;
+            outline: 0px;
+            user-select: none;
+		}
+
+		html, body{
+			position: absolute;
+			overflow: hidden;
+			width: 100%;
+			height: 100%;
+			top: 0;
+			left: 0;
+			background-color: #0000;
+			font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+		}
+
+        #container{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+			background-color: #0000;
+        }
+
+        #cube_wrapper{
+            position: relative;
+            width: 200px;
+            height: 200px;
+            perspective: 600px;
+        }
+
+        #cube{
+            width: 200px;
+            height: 200px;
+            position: relative;
+            transform-style: preserve-3d;
+			opacity: 0;
+        }
+
+        .side{
+            position: absolute;
+            width: 199px;
+            height: 199px;
+            border: 1px solid black;
+            font-size: 40px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+			background-size: 75%;
+			background-color: #222;
+			background-repeat: no-repeat;
+			background-position: center center;
+			opacity: 0.95;
+        }
+
+        #cube_front{ transform: rotateY(  0deg) translateZ(100px); background-image: url("./images/front.png"); }
+        #cube_right{ transform: rotateY( 90deg) translateZ(100px); background-image: url("./images/right.png"); }
+        #cube_back{ transform: rotateY(180deg) translateZ(100px); background-image: url("./images/back.png"); }
+        #cube_left{ transform: rotateY(-90deg) translateZ(100px); background-image: url("./images/left.png"); }
+        #cube_top{ transform: rotateX( 90deg) translateZ(100px); background-image: url("./images/top.png"); }
+        #cube_bottom{ transform: rotateX(-90deg) translateZ(100px); background-image: url("./images/bottom.png"); }
+
+        @keyframes intro{
+            from{ transform: scale(0) rotateZ(-180deg); }
+            to{ transform: scale(1) rotateZ(0deg); }
+        }
+
+        @keyframes outro{
+            from{ transform: scale(1) rotateZ(0deg); }
+            to{ transform: scale(0) rotateZ(-180deg); }
+        }
+
+        @keyframes fadeIn{
+            from{ background-color: #0000; }
+            to{ background-color: #000A; }
+        }
+
+        @keyframes fadeOut{
+            from{ background-color: #000A; }
+            to{ background-color: #0000; }
+        }
+
+	</style>
+	
+</head>
+
+<body>
+
+    <div id="container">
+
+        <div id="cube_wrapper">
+
+            <div id="cube" onmouseover="larger()" onmouseout="smaller()">
+                <div class="side" id="cube_front" data-name='front'></div>
+                <div class="side" id="cube_back" data-name='back'></div>
+                <div class="side" id="cube_right" data-name='right'></div>
+                <div class="side" id="cube_left" data-name='left'></div>
+                <div class="side" id="cube_top" data-name='top'></div>
+                <div class="side" id="cube_bottom" data-name='bottom'></div>
+			</div>
+			
+        </div>
+
+    </div>
+	
+	<script>
+	
+		const { webFrame, ipcRenderer, desktopCapturer } = require('electron');
+		webFrame.setZoomFactor(0.8);
+
+		let settings;
+
+		ipcRenderer.on('useCube', (event) => {
+
+			if( !settings.keepCubePosition ){
+				cube.style.transform = "rotateX(-20deg) rotateY(-30deg)";
+				x_movement = 0;
+				y_movement = 0;
+				x_last = 0;
+				y_last = 0;
+				_x = 0;
+				_y = 0;
+			}
+
+			document.getElementById("cube").style.opacity = "1";
+			document.getElementById("container").style.animation = "fadeIn 1000ms ease both";
+			document.getElementById("cube_wrapper").style.animation = "intro 1000ms ease both";
+
+			setTimeout(function(){
+				isReady = true;
+			}, 1000);
+
+		})
+
+		ipcRenderer.on('consoleLog', (event, arg) => {
+			console.log(arg);
+		});
+
+		ipcRenderer.on('settings', (event, path) => {
+
+			var fs = require('fs');
+
+			var filepath = path + "/settings.json";
+			fs.readFile(filepath, 'utf-8', (err, data) => {
+
+				if(err){
+					alert("An error ocurred reading the file :" + err.message);
+					return;
+				}
+
+				settings = JSON.parse(data);
+
+				ipcRenderer.send('setSettings', data);
+
+			});
+
+		})
+
+		let cube = document.getElementById("cube");
+		let isRotating = false;
+		let x_movement = 0;
+		let y_movement = 0;
+		let x_last = 0;
+		let y_last = 0;
+		let _x = 0;
+		let _y = 0;
+		let isReady = false;
+
+		function larger(){
+			if( !isReady ){ return; }
+			document.getElementById("cube").style.transition = "transform 500ms";
+			document.getElementById("cube").style.transform = "rotateX(" + -_y + "deg) rotateY(" + _x + "deg) scaleX(2) scaleY(2) scaleZ(2)";
+		}
+
+		function smaller(){
+			if( !isReady ){ return; }
+			document.getElementById("cube").style.transition = "transform 500ms";
+			document.getElementById("cube").style.transform = "rotateX(" + -_y + "deg) rotateY(" + _x + "deg) scaleX(1) scaleY(1) scaleZ(1)";
+		}
+
+		document.addEventListener('mousedown', function(e){
+
+			if( e.target.parentElement != cube ){ return; }
+
+			isRotating = true;
+			x_movement = e.clientX;
+			y_movement = e.clientY;
+			cube.style.transition = "transform 0ms";
+			
+		});
+
+		document.addEventListener('mouseup', function(e){
+			isRotating = false;
+			x_last = Math.floor(_x*5);
+        	y_last = Math.floor(_y*5);
+		});
+
+		document.addEventListener('dblclick', function(e){
+			isReady = false;
+			document.getElementById("cube_wrapper").style.animation = "500ms cubic-bezier(0.6, -0.28, 0.74, 0.05) 0s 1 normal both running outro";
+			document.getElementById("container").style.animation = "fadeOut 1000ms ease both";
+			ipcRenderer.send('closeWindow', e.target.dataset.name)
+		});
+
+		document.addEventListener('mousemove', function(e){
+			
+			if( !isRotating ){ return; }
+
+			document.getElementById("cube").style.transition = "transform 0ms";
+
+			_x = x_last + e.clientX - x_movement;
+			_y = y_last + e.clientY - y_movement;
+
+			_x = Math.floor(_x * 0.2);
+        	_y = Math.floor(_y * 0.2);
+
+			cube.style.transform = "rotateX(" + -_y + "deg) rotateY(" + _x + "deg) scaleX(2) scaleY(2) scaleZ(2)";
+
+		});
+
+		cube.style.transform = "rotateX(-20deg) rotateY(-30deg)";
+	
+	</script>
+
+</body>
+
+</html>
